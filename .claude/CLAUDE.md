@@ -80,6 +80,31 @@ directly.
    obvious from the name.
 9. Keep files under ~150 lines. Split before that becomes a problem.
 
+## Network & Sources (added once real fetchers start talking to the internet)
+
+10. Every external source lives behind a `Source` class with a uniform
+    interface (`jobedge/sources/base.py`). The Fetcher never contains
+    source-specific parsing; adding a source must never require editing the
+    Fetcher.
+11. Every Source returns a list of normalized dicts with EXACTLY these keys:
+    `source, external_id, title, company, location, url, description,
+    posted_at, raw`. Missing values are `None`, never empty string, never
+    `"N/A"`.
+12. All network calls go through one helper (`jobedge/sources/http.py`) with
+    a timeout (10s default), explicit retry (2 attempts, exponential
+    backoff), and a real User-Agent header. No bare `requests.get` anywhere
+    else in the codebase.
+13. A source failing must NEVER kill the cycle. Catch per-source, log the
+    failure to `cycle_log` with status "failed", continue to the next
+    source. One dead job board must not stop the others.
+14. Secrets come from environment variables via a `.env` file that is
+    gitignored. Never a literal key in code, never a key in `config.yaml`.
+    If a key is missing, that source skips itself with a clear log line —
+    it does not crash the cycle.
+15. Respect the source: rate limit to at most 1 request per second per
+    source (on top of the general `request_delay_seconds` etiquette in rule
+    7), set a real User-Agent, and honour any documented page limits.
+
 ## Style
 
 Small, testable functions. Plain readable Python over clever Python. When
