@@ -14,6 +14,7 @@ from jobedge.storage._queries import (
     upsert_listings,
 )
 from jobedge.storage._schema import init_db, make_listing_id, utcnow_iso
+from jobedge.storage._scoring import get_unscored_listings, update_listing_score
 
 __all__ = [
     "init_db",
@@ -25,4 +26,6 @@ __all__ = [
     "log_cycle",
     "get_listings",
     "get_diagnostics",
+    "get_unscored_listings",
+    "update_listing_score",
 ]
