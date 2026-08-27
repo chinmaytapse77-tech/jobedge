@@ -27,7 +27,8 @@ def main() -> None:
 
     print("\n5 most recent listings:")
     for row in summary["recent"]:
-        print(f"  [{row['source']}] {row['title']} @ {row['company']} ({row['fetched_at']})")
+        print(f"  [{row['source']}] {row['title']} @ {row['company']}")
+        print(f"    {row['url']}")
 
     issues = summary["quality_issues"]
     print(f"\nData quality issues (null/empty url, title, or company): {len(issues)}")

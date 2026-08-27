@@ -67,9 +67,9 @@ def _parse(html: str) -> list[dict]:
             normalize_row(
                 source="job_bank",
                 external_id=external_id,
-                title=title_el.get_text(strip=True) if title_el else None,
+                title=_strip_label(title_el.get_text(strip=True) if title_el else None, "Job Bank"),
                 company=company_el.get_text(strip=True) if company_el else None,
-                location=location_el.get_text(strip=True) if location_el else None,
+                location=_strip_label(location_el.get_text(strip=True) if location_el else None, "Location"),
                 url=url,
                 description=None,
                 posted_at=None,
@@ -79,3 +79,16 @@ def _parse(html: str) -> list[dict]:
     if cards and not rows:
         print("  job_bank: found result cards but couldn't extract a URL from any — selectors are stale")
     return rows
+
+
+def _strip_label(text: str | None, label: str) -> str | None:
+    """Job Bank's card markup glues badge/status text (e.g. 'New', 'Direct
+    Apply', a 'Posted on Job Bank...' disclaimer, or the literal word
+    'Location') onto the front of the real value with no separator, and
+    the real value reliably starts right after the last occurrence of the
+    trailing label. Confirmed against real output from a live run."""
+    if not text:
+        return text
+    if label in text:
+        text = text.rsplit(label, 1)[-1]
+    return text.strip() or None

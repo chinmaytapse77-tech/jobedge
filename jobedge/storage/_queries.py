@@ -103,7 +103,7 @@ def get_diagnostics(path: str) -> dict:
             """
         ).fetchall()
         recent = conn.execute(
-            "SELECT source, title, company, fetched_at FROM listings "
+            "SELECT source, title, company, url, fetched_at FROM listings "
             "ORDER BY fetched_at DESC LIMIT 5"
         ).fetchall()
         quality_issues = conn.execute(
