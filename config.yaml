@@ -1,0 +1,117 @@
+# JobEdge configuration — profile/location/source settings live here, never in code.
+
+db_path: "jobedge.db"
+min_fit_score: 50
+request_delay_seconds: 2.0
+
+# Enabled fetchers. Real fetchers land one at a time (Job Bank first); until
+# then the orchestrator wires these names to mock fetchers.
+sources:
+  - job_bank
+  - company_pages
+  - eluta
+  - jobillico
+  - talent_com
+  - indeed
+  - linkedin
+
+target_locations:
+  - city: "North York"
+    province: "ON"
+  - city: "Toronto"
+    province: "ON"
+  - city: "Calgary"
+    province: "AB"
+  - city: "Montreal"
+    province: "QC"
+
+profiles:
+  - name: "sales"
+    target_titles:
+      - "B2B Sales Executive"
+      - "Account Executive"
+      - "Sales Associate"
+      - "Business Development Representative"
+      - "Inside Sales Representative"
+      - "Territory Sales Manager"
+      - "Sales Representative"
+    keywords:
+      - "B2B sales"
+      - "SaaS"
+      - "HRIS"
+      - "account management"
+      - "consultative selling"
+      - "upselling"
+      - "cross-selling"
+      - "CRM"
+      - "sales targets"
+      - "quota"
+      - "prospecting"
+      - "client relationship management"
+      - "objection handling"
+      - "sales pipeline"
+      - "product knowledge"
+    keywords_fr:
+      - "ventes B2B"
+      - "vente consultative"
+      - "gestion de la relation client"
+      - "développement des affaires"
+      - "représentant des ventes"
+    my_skills:
+      - "consultative selling"
+      - "upselling and cross-selling"
+      - "customer relationship management"
+      - "objection handling"
+      - "product knowledge"
+      - "sales training and coaching"
+      - "Python"
+      - "SQL"
+      - "Excel (macros, VBA)"
+    experience_years: 3
+    resume_path: "resumes/sales_resume.pdf"
+
+  - name: "hr"
+    target_titles:
+      - "HR Generalist"
+      - "HR Coordinator"
+      - "HR Administrative Assistant"
+      - "HR Assistant"
+      - "Recruitment Coordinator"
+      - "Onboarding Coordinator"
+      - "Global Mobility Analyst"
+    keywords:
+      - "HR administration"
+      - "onboarding"
+      - "employee relations"
+      - "HRIS"
+      - "recruitment"
+      - "compliance"
+      - "payroll"
+      - "global mobility"
+      - "employee documentation"
+      - "Workday"
+      - "HR policies"
+      - "interview scheduling"
+      - "benefits administration"
+    keywords_fr:
+      - "ressources humaines"
+      - "adjoint administratif"
+      - "coordonnateur RH"
+      - "recrutement"
+      - "intégration des employés"
+      - "paie"
+      - "conformité"
+    my_skills:
+      - "HR administration and operations"
+      - "employee documentation and compliance"
+      - "onboarding and training coordination"
+      - "global mobility and international assignments"
+      - "HR data management and reporting"
+      - "Workday HCM and Compensation"
+      - "payroll support"
+      - "Python"
+      - "SQL"
+      - "Excel"
+      - "Tableau"
+    experience_years: 3
+    resume_path: "resumes/hr_resume.pdf"
