@@ -1,0 +1,42 @@
+name: JobEdge Cycle
+
+on:
+  schedule:
+    # 13:00 UTC daily (~9am Toronto during EDT). Adjust as you like -- this
+    # respects source rate limits (request_delay_seconds in config.yaml)
+    # regardless of how often it runs.
+    - cron: "0 13 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  run-cycle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run JobEdge cycle
+        run: python run_cycle.py
+
+      - name: Commit updated database
+        run: |
+          git config user.name "jobedge-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f jobedge.db
+          if git diff --cached --quiet; then
+            echo "No database changes to commit"
+          else
+            git commit -m "JobEdge cycle: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          fi
