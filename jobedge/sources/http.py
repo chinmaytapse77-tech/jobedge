@@ -9,6 +9,8 @@ from __future__ import annotations
 import time
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.ssl_ import create_urllib3_context
 
 DEFAULT_TIMEOUT_SECONDS = 10
 MAX_RETRIES = 2
@@ -24,13 +26,31 @@ class SourceError(Exception):
     never let it crash the whole cycle."""
 
 
+class _CompatTLSAdapter(HTTPAdapter):
+    """Some sites (e.g. eluta.ca) run a narrower/older TLS cipher suite that
+    OpenSSL 3.x's default SECLEVEL=2 rejects outright (SSLV3_ALERT_
+    HANDSHAKE_FAILURE), even though a real browser connects fine. Lowering
+    to SECLEVEL=1 widens the accepted cipher list to match what browsers
+    still tolerate."""
+
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = create_urllib3_context()
+        ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+        kwargs["ssl_context"] = ctx
+        return super().init_poolmanager(*args, **kwargs)
+
+
+_session = requests.Session()
+_session.mount("https://", _CompatTLSAdapter())
+
+
 def _request(method: str, url: str, *, params: dict | None, headers: dict | None) -> requests.Response:
     merged_headers = {"User-Agent": USER_AGENT, **(headers or {})}
     last_exc: Exception | None = None
 
     for attempt in range(MAX_RETRIES + 1):
         try:
-            response = requests.request(
+            response = _session.request(
                 method, url, params=params, headers=merged_headers,
                 timeout=DEFAULT_TIMEOUT_SECONDS,
             )
