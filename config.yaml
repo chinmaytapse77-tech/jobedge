@@ -4,6 +4,10 @@ db_path: "jobedge.db"
 min_fit_score: 50
 request_delay_seconds: 2.0
 
+# false = use real Sources (job_bank, eluta today); true = mock fetchers,
+# for developing offline without hitting the network.
+use_mock_fetcher: false
+
 # Enabled fetchers. Real fetchers land one at a time (Job Bank first); until
 # then the orchestrator wires these names to mock fetchers.
 sources:

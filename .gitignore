@@ -5,3 +5,4 @@ venv/
 *.db
 resumes/*
 !resumes/README.md
+.env

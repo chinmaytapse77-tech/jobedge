@@ -10,16 +10,20 @@ import time
 from jobedge import storage
 from jobedge.agents.base import Agent, AgentResult
 from jobedge.agents.mock_fetchers import MockFetcher
+from jobedge.agents.real_fetchers import SourceFetcher
 from jobedge.config import Config
+from jobedge.sources import base as sources_base
+from jobedge.sources import eluta, job_bank  # noqa: F401 - import registers them
 
-# Registry pattern: swap a mock for a real fetcher by changing this one line
-# (e.g. "job_bank": JobBankFetcher, once Prompt 4 lands it).
-FETCHER_REGISTRY: dict[str, callable] = {
-    "company_pages": lambda: MockFetcher("company_pages"),
-    "eluta": lambda: MockFetcher("eluta"),
-    "indeed": lambda: MockFetcher("indeed"),
-    "linkedin": lambda: MockFetcher("linkedin"),
-}
+MOCKED_SOURCES = ("company_pages", "eluta", "indeed", "linkedin")
+
+
+def _build_registry(config: Config) -> dict[str, callable]:
+    """Registry pattern: swap mock for real fetchers with one config flag
+    (use_mock_fetcher) rather than editing this file per source."""
+    if config.use_mock_fetcher:
+        return {name: (lambda n=name: MockFetcher(n)) for name in MOCKED_SOURCES}
+    return {name: (lambda cls=cls: SourceFetcher(cls())) for name, cls in sources_base.SOURCES.items()}
 
 SCORER_STATUS = "not implemented yet (Prompt 5)"
 GAP_ANALYZER_STATUS = "not implemented yet (Prompt 6)"
@@ -31,10 +35,12 @@ def run_cycle(config: Config) -> None:
     storage.init_db(config.db_path)
     print(f"\n{_RULE}\nJOBEDGE CYCLE START — {storage.utcnow_iso()}\n{_RULE}")
 
+    registry = _build_registry(config)
+    mode = "mock" if config.use_mock_fetcher else "real"
     _print_state(config)
-    _print_plan(config)
+    _print_plan(config, registry, mode)
 
-    results = [_run_source(config, source) for source in config.sources]
+    results = [_run_source(config, registry, source) for source in config.sources]
 
     _print_summary(config, results)
 
@@ -49,20 +55,20 @@ def _print_state(config: Config) -> None:
         print(f"  {profile.name:<16} unscored listings: {unscored}")
 
 
-def _print_plan(config: Config) -> None:
-    print("\n-- Plan --")
+def _print_plan(config: Config, registry: dict, mode: str) -> None:
+    print(f"\n-- Plan ({mode} fetchers) --")
     for source in config.sources:
-        if source in FETCHER_REGISTRY:
-            print(f"  [run]  {source:<16} fetcher registered (mock)")
+        if source in registry:
+            print(f"  [run]  {source:<16} fetcher registered ({mode})")
         else:
             print(f"  [skip] {source:<16} no fetcher registered yet")
     print(f"  [skip] scorer            {SCORER_STATUS}")
     print(f"  [skip] gap_analyzer      {GAP_ANALYZER_STATUS}")
 
 
-def _run_source(config: Config, source: str) -> AgentResult:
+def _run_source(config: Config, registry: dict, source: str) -> AgentResult:
     started_at = storage.utcnow_iso()
-    factory = FETCHER_REGISTRY.get(source)
+    factory = registry.get(source)
 
     if factory is None:
         result = AgentResult(
