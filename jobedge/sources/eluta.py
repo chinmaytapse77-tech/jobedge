@@ -1,9 +1,10 @@
 """Eluta.ca — public search results, tolerant of light scraping. No key, free.
 
-UNVERIFIED against live markup, same caveat as job_bank.py: this sandbox
-cannot reach eluta.ca. Verify locally; if 0 listings survive, the
-selectors are stale — paste back one raw result card's HTML rather than
-guessing at a fix.
+Connects fine (TLS handshake fixed in http.py), but none of the guessed
+card selectors below have matched real markup yet -- this sandbox cannot
+reach eluta.ca to verify directly. A one-time debug dump of the raw page
+body fires on the next real run when zero cards match, so the actual
+selector gets fixed from real structure instead of another guess.
 """
 
 from __future__ import annotations
@@ -17,6 +18,8 @@ from jobedge.sources.util import search_all_locations
 
 SEARCH_URL = "https://www.eluta.ca/search"
 MAX_PAGES = 3
+
+_debug_page_printed = False
 
 
 @register
@@ -44,8 +47,15 @@ def _search(keywords: str | None, city: str) -> list[dict]:
 
 
 def _parse(html: str) -> list[dict]:
+    global _debug_page_printed
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.select("span.organic-job") or soup.select("li.organic-job") or soup.select("div.result")
+    if not cards and not _debug_page_printed:
+        # None of our guessed selectors matched anything -- dump real page
+        # structure instead of guessing again (same rule as job_bank.py).
+        body = soup.body
+        print(f"  eluta: DEBUG no cards matched, raw body (first 3000 chars):\n{str(body)[:3000] if body else html[:3000]}")
+        _debug_page_printed = True
     rows = []
     for card in cards:
         link = card.select_one("a.app-click-link") or card.find("a", href=True)
