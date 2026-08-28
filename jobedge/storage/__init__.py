@@ -21,6 +21,7 @@ from jobedge.storage._gap_analysis import (
     get_skill_gaps,
     replace_skill_gaps,
 )
+from jobedge.storage._verification import get_all_scores, get_recent_agent_notes, reset_profile_scores
 
 __all__ = [
     "init_db",
@@ -39,4 +40,7 @@ __all__ = [
     "get_scored_listings_below_threshold",
     "replace_skill_gaps",
     "get_skill_gaps",
+    "get_recent_agent_notes",
+    "get_all_scores",
+    "reset_profile_scores",
 ]
