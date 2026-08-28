@@ -36,6 +36,7 @@ class Profile:
     experience_years: int
     resume_path: str
     keywords_fr: list[str] = field(default_factory=list)
+    market_skills: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -64,6 +65,7 @@ def _build_profile(raw: dict, index: int) -> Profile:
         experience_years=int(raw["experience_years"]),
         resume_path=raw["resume_path"],
         keywords_fr=list(raw.get("keywords_fr", [])),
+        market_skills=list(raw.get("market_skills", [])),
     )
 
 

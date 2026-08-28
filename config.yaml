@@ -71,6 +71,22 @@ profiles:
       - "Python"
       - "SQL"
       - "Excel (macros, VBA)"
+    # Skills the market wants for these roles that aren't in my_skills above --
+    # GapAnalyzer ranks these by how many listings mention them.
+    market_skills:
+      - "Salesforce"
+      - "HubSpot"
+      - "LinkedIn Sales Navigator"
+      - "cold calling"
+      - "lead generation"
+      - "sales pipeline management"
+      - "quota attainment"
+      - "enterprise sales"
+      - "channel partnerships"
+      - "negotiation"
+      - "sales forecasting"
+      - "territory management"
+      - "account-based selling"
     experience_years: 3
     resume_path: "resumes/sales_resume.pdf"
 
@@ -117,5 +133,20 @@ profiles:
       - "SQL"
       - "Excel"
       - "Tableau"
+    # Skills the market wants for these roles that aren't in my_skills above --
+    # GapAnalyzer ranks these by how many listings mention them.
+    market_skills:
+      - "ATS"
+      - "BambooHR"
+      - "ADP"
+      - "labor relations"
+      - "performance management"
+      - "compensation and benefits"
+      - "HRIS implementation"
+      - "employee relations"
+      - "diversity and inclusion"
+      - "employment law"
+      - "conflict resolution"
+      - "talent acquisition"
     experience_years: 3
     resume_path: "resumes/hr_resume.pdf"
