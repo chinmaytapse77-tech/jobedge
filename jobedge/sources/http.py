@@ -7,6 +7,7 @@ directly, so timeout, retry, backoff, and User-Agent apply uniformly.
 from __future__ import annotations
 
 import time
+from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -14,10 +15,17 @@ from urllib3.util.ssl_ import create_urllib3_context
 
 DEFAULT_TIMEOUT_SECONDS = 10
 MAX_RETRIES = 2
+MIN_SECONDS_BETWEEN_REQUESTS = 1.0
 USER_AGENT = (
     "JobEdgeBot/1.0 (+https://github.com/chinmaytapse77-tech/jobedge; "
     "personal job-search agent, contact: chinmaytapse77@gmail.com)"
 )
+
+# Per-host last-request timestamp, so "at most 1 request per second per
+# source" (steering rule 15) holds even when a Source makes several calls
+# in a row (pagination, multiple locations/keywords) -- not just between
+# different sources, which the orchestrator already paces separately.
+_last_request_at: dict[str, float] = {}
 
 
 class SourceError(Exception):
@@ -44,7 +52,19 @@ _session = requests.Session()
 _session.mount("https://", _CompatTLSAdapter())
 
 
+def _wait_for_rate_limit(url: str) -> None:
+    host = urlparse(url).netloc
+    last = _last_request_at.get(host)
+    if last is not None:
+        elapsed = time.monotonic() - last
+        remaining = MIN_SECONDS_BETWEEN_REQUESTS - elapsed
+        if remaining > 0:
+            time.sleep(remaining)
+    _last_request_at[host] = time.monotonic()
+
+
 def _request(method: str, url: str, *, params: dict | None, headers: dict | None) -> requests.Response:
+    _wait_for_rate_limit(url)
     merged_headers = {"User-Agent": USER_AGENT, **(headers or {})}
     last_exc: Exception | None = None
 
