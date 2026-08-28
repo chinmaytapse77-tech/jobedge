@@ -15,6 +15,7 @@ from jobedge.storage._queries import (
 )
 from jobedge.storage._schema import init_db, make_listing_id, utcnow_iso
 from jobedge.storage._scoring import get_unscored_listings, update_listing_score
+from jobedge.storage._enrichment import get_enrichment_candidates, update_listing_description
 
 __all__ = [
     "init_db",
@@ -28,4 +29,6 @@ __all__ = [
     "get_diagnostics",
     "get_unscored_listings",
     "update_listing_score",
+    "get_enrichment_candidates",
+    "update_listing_description",
 ]

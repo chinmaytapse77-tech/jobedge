@@ -49,6 +49,12 @@ def score_listing(
     return score, reason
 
 
+def pick_track(sales_score: int, hr_score: int) -> str | None:
+    if sales_score == 0 and hr_score == 0:
+        return None
+    return "sales" if sales_score >= hr_score else "hr"
+
+
 def _first_match(haystack: str, candidates: list[str]) -> str | None:
     for candidate in candidates:
         if candidate.lower() in haystack:
