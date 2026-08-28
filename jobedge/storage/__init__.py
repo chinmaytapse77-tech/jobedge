@@ -22,6 +22,7 @@ from jobedge.storage._gap_analysis import (
     replace_skill_gaps,
 )
 from jobedge.storage._verification import get_all_scores, get_recent_agent_notes, reset_profile_scores
+from jobedge.storage._maintenance import backfill_job_bank_text
 
 __all__ = [
     "init_db",
@@ -43,4 +44,5 @@ __all__ = [
     "get_recent_agent_notes",
     "get_all_scores",
     "reset_profile_scores",
+    "backfill_job_bank_text",
 ]
