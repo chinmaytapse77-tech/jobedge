@@ -2,11 +2,10 @@
 
 Confirmed via a real debug scan: result cards live in #organic-jobs as
 <div class="organic-job odd|even">, each with an <a class="lk-job-title">
-title link. The earlier span.organic-job guess was one wrong tag name
-(span vs div) away from working. Company/location selectors below are
-still best-effort -- a one-time debug dump of a full real card fires if
-a card is found but company/location can't be extracted, so those get
-the same real-markup treatment if they're wrong too.
+title link and an <a class="employer lk-employer"> for the company. The
+title link's href is always a dead "#!" JS anchor -- the real destination
+is its data-url attribute, which _resolve_url() uses instead (falling back
+to href for any card that doesn't follow that pattern).
 """
 
 from __future__ import annotations
@@ -67,10 +66,9 @@ def _parse(html: str, params: dict | None = None) -> list[dict]:
         link = card.select_one("a.lk-job-title") or card.select_one("a.app-click-link") or card.find("a", href=True)
         if link is None:
             continue
-        href = link.get("href", "")
-        url = href if href.startswith("http") else f"https://www.eluta.ca{href}"
+        url = _resolve_url(link)
         title = link.get_text(strip=True) or None
-        company_el = card.select_one(".orgName, .company, .lk-company")
+        company_el = card.select_one(".employer, .lk-employer, .orgName, .company, .lk-company")
         location_el = card.select_one(".location")
         if (not company_el or not location_el) and not _debug_card_printed:
             print(f"  eluta: DEBUG full card HTML (company/location selectors unverified):\n{str(card)[:2000]}")
@@ -78,7 +76,7 @@ def _parse(html: str, params: dict | None = None) -> list[dict]:
         rows.append(
             normalize_row(
                 source="eluta",
-                external_id=href,
+                external_id=url,
                 title=title,
                 company=company_el.get_text(strip=True) if company_el else None,
                 location=location_el.get_text(strip=True) if location_el else None,
@@ -91,6 +89,17 @@ def _parse(html: str, params: dict | None = None) -> list[dict]:
     if cards and not rows:
         print("  eluta: found result cards but couldn't extract a link from any — selectors are stale")
     return rows
+
+
+def _resolve_url(link) -> str:
+    """The title link's real destination is a JS-driven data-url attribute
+    (e.g. "spl/b2b-sales-...?imo=12"); href is always the dead "#!" anchor.
+    Falls back to href for any card that doesn't follow that pattern."""
+    data_url = link.get("data-url")
+    if data_url:
+        return f"https://www.eluta.ca/{data_url.lstrip('/')}"
+    href = link.get("href", "")
+    return href if href.startswith("http") else f"https://www.eluta.ca{href}"
 
 
 def _debug_scan(soup: BeautifulSoup, params: dict | None) -> None:
