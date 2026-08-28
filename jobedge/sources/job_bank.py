@@ -1,11 +1,16 @@
 """Job Bank (jobbank.gc.ca) — public search results. No signup, no key, free.
 
-UNVERIFIED against live markup: this sandbox's egress policy blocks
-jobbank.gc.ca outright, so these selectors could not be tested against the
-real page. Run the verification one-liner locally where you have real
-internet access. If 0 listings survive parsing, the CSS selectors below
-are stale — paste back the raw HTML of one result card (print(cards[0]) in
-_parse) rather than guessing, and this gets fixed in one pass.
+Verified against real markup (captured via a one-time debug dump from a
+live Actions run): search-result cards are <a class="resultJobItem"> with
+an inner <h3 class="title"> that wraps BOTH the badge/status spans (New,
+Direct Apply, "Posted on Job Bank...") AND a separate <span class="noctitle">
+holding just the real title. `select_one(".noctitle, h3, h4")` doesn't
+prefer .noctitle -- BeautifulSoup returns the first match in *document
+order*, and the wrapping <h3> comes first, so it always won that lookup.
+That's the actual cause of the earlier corrupted-title bug.
+
+The search-results list page has NO description/summary text at all --
+only an individual job posting's own page does (fetch_description below).
 """
 
 from __future__ import annotations
@@ -19,8 +24,9 @@ from jobedge.sources.util import search_all_locations
 
 SEARCH_URL = "https://www.jobbank.gc.ca/jobsearch/jobsearch"
 MAX_PAGES = 3
+MAX_DESCRIPTION_CHARS = 4000
 
-_debug_card_printed = False
+_debug_detail_printed = False
 
 
 @register
@@ -48,18 +54,12 @@ def _search(keywords: str | None, city: str) -> list[dict]:
 
 
 def _parse(html: str) -> list[dict]:
-    global _debug_card_printed
     soup = BeautifulSoup(html, "html.parser")
     cards = (
         soup.select("article.resultJobItem")
         or soup.select("div.resultJobItem")
         or soup.select("a[href*='/jobsearch/jobposting/']")
     )
-    if cards and not _debug_card_printed:
-        # One-time real-markup dump so the next fix is exact, not another
-        # guess (same idea as the class doc's "print the raw result" rule).
-        print(f"  job_bank: DEBUG first card raw HTML:\n{str(cards[0])[:3000]}")
-        _debug_card_printed = True
     rows = []
     for card in cards:
         link = card if card.name == "a" else card.select_one("a[href*='/jobsearch/jobposting/']")
@@ -68,7 +68,7 @@ def _parse(html: str) -> list[dict]:
         href = link.get("href", "")
         url = href if href.startswith("http") else f"https://www.jobbank.gc.ca{href}"
         external_id = href.rstrip("/").split("/")[-1] or url
-        title_el = card.select_one(".noctitle, h3, h4") or link
+        title_el = card.select_one(".noctitle") or card.select_one("h3, h4") or link
         company_el = card.select_one(".business")
         location_el = card.select_one(".location")
         rows.append(
@@ -89,12 +89,29 @@ def _parse(html: str) -> list[dict]:
     return rows
 
 
+def fetch_description(url: str) -> str | None:
+    """Fetch one job posting's own page and pull its main content text.
+    Job Bank runs the Government of Canada WET template (confirmed by the
+    wb-inv visually-hidden-text convention seen in list-page markup), whose
+    main content lives in <main>; falls back to <body> if that's missing."""
+    global _debug_detail_printed
+    html = get_html(url)
+    soup = BeautifulSoup(html, "html.parser")
+    main = soup.select_one("main") or soup.body
+    if main is None:
+        return None
+    text = main.get_text(" ", strip=True)
+    if not _debug_detail_printed:
+        print(f"  job_bank: DEBUG detail page main content (first 1500 chars):\n{text[:1500]}")
+        _debug_detail_printed = True
+    return text[:MAX_DESCRIPTION_CHARS] or None
+
+
 def _strip_label(text: str | None, label: str) -> str | None:
-    """Job Bank's card markup glues badge/status text (e.g. 'New', 'Direct
-    Apply', a 'Posted on Job Bank...' disclaimer, or the literal word
-    'Location') onto the front of the real value with no separator, and
+    """Defensive backstop for the h3/h4 fallback path: if that's ever hit,
+    badge/status text is still glued onto the front with no separator, and
     the real value reliably starts right after the last occurrence of the
-    trailing label. Confirmed against real output from a live run."""
+    trailing label."""
     if not text:
         return text
     if label in text:

@@ -67,6 +67,13 @@ def _build_profile(raw: dict, index: int) -> Profile:
     )
 
 
+def find_profile(config: Config, name: str) -> Profile:
+    for profile in config.profiles:
+        if profile.name == name:
+            return profile
+    raise ValueError(f"config.yaml has no profile named {name!r}")
+
+
 def load_config(path: str | Path = "config.yaml") -> Config:
     """Load and validate Config from a YAML file.
 
