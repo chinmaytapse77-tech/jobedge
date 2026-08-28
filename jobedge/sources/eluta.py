@@ -39,19 +39,19 @@ def _search(keywords: str | None, city: str) -> list[dict]:
         if keywords:
             params["q"] = keywords
         html = get_html(SEARCH_URL, params=params)
-        page_rows = _parse(html)
+        page_rows = _parse(html, params)
         if not page_rows:
             break
         rows.extend(page_rows)
     return rows
 
 
-def _parse(html: str) -> list[dict]:
+def _parse(html: str, params: dict | None = None) -> list[dict]:
     global _debug_page_printed
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.select("span.organic-job") or soup.select("li.organic-job") or soup.select("div.result")
     if not cards and not _debug_page_printed:
-        _debug_scan(soup)
+        _debug_scan(soup, params)
         _debug_page_printed = True
     rows = []
     for card in cards:
@@ -81,20 +81,26 @@ def _parse(html: str) -> list[dict]:
     return rows
 
 
-def _debug_scan(soup: BeautifulSoup) -> None:
-    """The last debug dump (raw body, first 3000 chars) never reached the
-    results section -- it's a big page and got truncated in the search
-    form. Scanning for id/class mentioning "result" or "job" is a much
-    smaller, more targeted signal than dumping more raw HTML blind."""
+def _debug_scan(soup: BeautifulSoup, params: dict | None) -> None:
+    """First scan (id/class scan across the page) found a literal
+    <div class="noResults"> -- this isn't a selector bug, Eluta is
+    genuinely returning zero matches for our query. This round captures
+    the exact params that produced that, plus whatever text the
+    no-results message itself says, since sites often explain why
+    (e.g. "no jobs match 'X'") or suggest a different query."""
+    print(f"  eluta: DEBUG params that produced zero results: {params}")
+    no_results_el = soup.select_one(".noResults")
+    if no_results_el is not None:
+        print(f"  eluta: DEBUG noResults message text: {no_results_el.get_text(' ', strip=True)!r}")
+        parent = no_results_el.parent
+        if parent is not None:
+            print(f"  eluta: DEBUG noResults parent container text: {parent.get_text(' ', strip=True)[:500]!r}")
     matches = [
         el
         for el in soup.find_all(True)
         if (el.get("id") and any(t in el.get("id", "").lower() for t in ("result", "job")))
         or any(t in cls.lower() for cls in (el.get("class") or []) for t in ("result", "job"))
     ]
-    print(f"  eluta: DEBUG no cards matched. Total tags on page: {len(soup.find_all(True))}")
-    print(f"  eluta: DEBUG {len(matches)} tag(s) with 'result'/'job' in id or class (first 40):")
-    for el in matches[:40]:
+    print(f"  eluta: DEBUG {len(matches)} tag(s) with 'result'/'job' in id or class (first 15):")
+    for el in matches[:15]:
         print(f"    <{el.name} id={el.get('id')!r} class={el.get('class')!r}>")
-    if not matches:
-        print(f"  eluta: DEBUG no matches -- raw body (first 4000 chars):\n{str(soup.body)[:4000]}")
