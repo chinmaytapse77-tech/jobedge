@@ -1,7 +1,7 @@
 # JobEdge configuration — profile/location/source settings live here, never in code.
 
 db_path: "jobedge.db"
-min_fit_score: 50
+min_fit_score: 30
 request_delay_seconds: 2.0
 
 # false = use real Sources (job_bank, eluta today); true = mock fetchers,
