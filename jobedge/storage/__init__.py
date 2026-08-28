@@ -16,6 +16,11 @@ from jobedge.storage._queries import (
 from jobedge.storage._schema import init_db, make_listing_id, utcnow_iso
 from jobedge.storage._scoring import get_unscored_listings, update_listing_score
 from jobedge.storage._enrichment import get_enrichment_candidates, update_listing_description
+from jobedge.storage._gap_analysis import (
+    get_scored_listings_below_threshold,
+    get_skill_gaps,
+    replace_skill_gaps,
+)
 
 __all__ = [
     "init_db",
@@ -31,4 +36,7 @@ __all__ = [
     "update_listing_score",
     "get_enrichment_candidates",
     "update_listing_description",
+    "get_scored_listings_below_threshold",
+    "replace_skill_gaps",
+    "get_skill_gaps",
 ]
