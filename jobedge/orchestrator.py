@@ -14,6 +14,7 @@ from jobedge.agents.gap_analyzer import GapAnalyzer
 from jobedge.agents.mock_fetchers import MockFetcher
 from jobedge.agents.real_fetchers import SourceFetcher
 from jobedge.agents.scorer import Scorer
+from jobedge.agents.verifier import Verifier
 from jobedge.config import Config
 from jobedge.sources import base as sources_base
 from jobedge.sources import eluta, job_bank  # noqa: F401 - import registers them
@@ -27,8 +28,6 @@ def _build_registry(config: Config) -> dict[str, callable]:
     if config.use_mock_fetcher:
         return {name: (lambda n=name: MockFetcher(n)) for name in MOCKED_SOURCES}
     return {name: (lambda cls=cls: SourceFetcher(cls())) for name, cls in sources_base.SOURCES.items()}
-
-VERIFIER_STATUS = "not implemented yet (Prompt 7)"
 
 _RULE = "=" * 60
 
@@ -53,7 +52,10 @@ def run_cycle(config: Config) -> None:
     print("\n-- Running gap_analyzer --")
     gap_result = _run_agent_once(config, GapAnalyzer())
 
-    _print_summary(config, fetch_results, scorer_result, enricher_result, gap_result)
+    print("\n-- Running verifier --")
+    verifier_result = _run_agent_once(config, Verifier(registry, config.sources))
+
+    _print_summary(config, fetch_results, scorer_result, enricher_result, gap_result, verifier_result)
 
 
 def _print_state(config: Config) -> None:
@@ -76,7 +78,7 @@ def _print_plan(config: Config, registry: dict, mode: str) -> None:
     print(f"  [run]  scorer            scores every unscored listing against both profiles")
     print(f"  [run]  enricher          fetches real descriptions for top {MAX_CANDIDATES} candidates")
     print(f"  [run]  gap_analyzer      ranks missing skills by listings they'd unlock, per profile")
-    print(f"  [skip] verifier          {VERIFIER_STATUS}")
+    print(f"  [run]  verifier          checks for silently-dead sources and degenerate scoring")
 
 
 def _run_source(config: Config, registry: dict, source: str) -> AgentResult:
@@ -130,6 +132,7 @@ def _print_summary(
     scorer_result: AgentResult,
     enricher_result: AgentResult,
     gap_result: AgentResult,
+    verifier_result: AgentResult,
 ) -> None:
     print(f"\n{_RULE}\nCYCLE SUMMARY\n{_RULE}")
     print("-- By source --")
@@ -138,8 +141,9 @@ def _print_summary(
     print(f"\n-- Scorer --\n  {scorer_result.notes}")
     print(f"\n-- Enricher --\n  {enricher_result.notes}")
     print(f"\n-- Gap analyzer --\n  {gap_result.notes}")
+    print(f"\n-- Verifier --\n  {verifier_result.notes}")
     print("\n-- By profile --")
     for profile in config.profiles:
         unscored = storage.count_unscored(config.db_path, profile.name)
-        print(f"  {profile.name:<16} unscored listings: {unscored:<4} (verifier {VERIFIER_STATUS})")
+        print(f"  {profile.name:<16} unscored listings: {unscored:<4}")
     print(f"{_RULE}\nJOBEDGE CYCLE END\n{_RULE}\n")
