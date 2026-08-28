@@ -1,10 +1,12 @@
 """Eluta.ca — public search results, tolerant of light scraping. No key, free.
 
-Connects fine (TLS handshake fixed in http.py), but none of the guessed
-card selectors below have matched real markup yet -- this sandbox cannot
-reach eluta.ca to verify directly. A one-time debug dump of the raw page
-body fires on the next real run when zero cards match, so the actual
-selector gets fixed from real structure instead of another guess.
+Confirmed via a real debug scan: result cards live in #organic-jobs as
+<div class="organic-job odd|even">, each with an <a class="lk-job-title">
+title link. The earlier span.organic-job guess was one wrong tag name
+(span vs div) away from working. Company/location selectors below are
+still best-effort -- a one-time debug dump of a full real card fires if
+a card is found but company/location can't be extracted, so those get
+the same real-markup treatment if they're wrong too.
 """
 
 from __future__ import annotations
@@ -19,7 +21,8 @@ from jobedge.sources.util import search_all_locations
 SEARCH_URL = "https://www.eluta.ca/search"
 MAX_PAGES = 3
 
-_debug_page_printed = False
+_debug_no_cards_printed = False
+_debug_card_printed = False
 
 
 @register
@@ -47,22 +50,31 @@ def _search(keywords: str | None, city: str) -> list[dict]:
 
 
 def _parse(html: str, params: dict | None = None) -> list[dict]:
-    global _debug_page_printed
+    global _debug_no_cards_printed, _debug_card_printed
     soup = BeautifulSoup(html, "html.parser")
-    cards = soup.select("span.organic-job") or soup.select("li.organic-job") or soup.select("div.result")
-    if not cards and not _debug_page_printed:
+    cards = (
+        soup.select("div.organic-job")
+        or soup.select("span.organic-job")
+        or soup.select("li.organic-job")
+        or soup.select("div.result")
+    )
+    if not cards and not _debug_no_cards_printed:
         _debug_scan(soup, params)
-        _debug_page_printed = True
+        _debug_no_cards_printed = True
+
     rows = []
     for card in cards:
-        link = card.select_one("a.app-click-link") or card.find("a", href=True)
+        link = card.select_one("a.lk-job-title") or card.select_one("a.app-click-link") or card.find("a", href=True)
         if link is None:
             continue
         href = link.get("href", "")
         url = href if href.startswith("http") else f"https://www.eluta.ca{href}"
         title = link.get_text(strip=True) or None
-        company_el = card.select_one(".orgName, .company")
+        company_el = card.select_one(".orgName, .company, .lk-company")
         location_el = card.select_one(".location")
+        if (not company_el or not location_el) and not _debug_card_printed:
+            print(f"  eluta: DEBUG full card HTML (company/location selectors unverified):\n{str(card)[:2000]}")
+            _debug_card_printed = True
         rows.append(
             normalize_row(
                 source="eluta",
@@ -82,19 +94,13 @@ def _parse(html: str, params: dict | None = None) -> list[dict]:
 
 
 def _debug_scan(soup: BeautifulSoup, params: dict | None) -> None:
-    """First scan (id/class scan across the page) found a literal
-    <div class="noResults"> -- this isn't a selector bug, Eluta is
-    genuinely returning zero matches for our query. This round captures
-    the exact params that produced that, plus whatever text the
-    no-results message itself says, since sites often explain why
-    (e.g. "no jobs match 'X'") or suggest a different query."""
+    """Fires only if zero cards match at all (shouldn't happen now that
+    div.organic-job is confirmed, but kept as a safety net for a future
+    markup change)."""
     print(f"  eluta: DEBUG params that produced zero results: {params}")
     no_results_el = soup.select_one(".noResults")
     if no_results_el is not None:
         print(f"  eluta: DEBUG noResults message text: {no_results_el.get_text(' ', strip=True)!r}")
-        parent = no_results_el.parent
-        if parent is not None:
-            print(f"  eluta: DEBUG noResults parent container text: {parent.get_text(' ', strip=True)[:500]!r}")
     matches = [
         el
         for el in soup.find_all(True)
