@@ -29,6 +29,9 @@ jobs:
       - name: Run JobEdge cycle
         run: python run_cycle.py
 
+      - name: Backfill job_bank title/location cleanup
+        run: python -m jobedge.backfill_titles
+
       - name: Commit updated database
         run: |
           git config user.name "jobedge-bot"

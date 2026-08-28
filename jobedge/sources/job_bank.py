@@ -75,9 +75,9 @@ def _parse(html: str) -> list[dict]:
             normalize_row(
                 source="job_bank",
                 external_id=external_id,
-                title=_strip_label(title_el.get_text(strip=True) if title_el else None, "Job Bank"),
+                title=strip_label(title_el.get_text(strip=True) if title_el else None, "Job Bank"),
                 company=company_el.get_text(strip=True) if company_el else None,
-                location=_strip_label(location_el.get_text(strip=True) if location_el else None, "Location"),
+                location=strip_label(location_el.get_text(strip=True) if location_el else None, "Location"),
                 url=url,
                 description=None,
                 posted_at=None,
@@ -107,7 +107,7 @@ def fetch_description(url: str) -> str | None:
     return text[:MAX_DESCRIPTION_CHARS] or None
 
 
-def _strip_label(text: str | None, label: str) -> str | None:
+def strip_label(text: str | None, label: str) -> str | None:
     """Defensive backstop for the h3/h4 fallback path: if that's ever hit,
     badge/status text is still glued onto the front with no separator, and
     the real value reliably starts right after the last occurrence of the
