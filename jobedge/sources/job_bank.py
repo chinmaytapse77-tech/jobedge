@@ -20,6 +20,8 @@ from jobedge.sources.util import search_all_locations
 SEARCH_URL = "https://www.jobbank.gc.ca/jobsearch/jobsearch"
 MAX_PAGES = 3
 
+_debug_card_printed = False
+
 
 @register
 class JobBankSource(Source):
@@ -46,12 +48,18 @@ def _search(keywords: str | None, city: str) -> list[dict]:
 
 
 def _parse(html: str) -> list[dict]:
+    global _debug_card_printed
     soup = BeautifulSoup(html, "html.parser")
     cards = (
         soup.select("article.resultJobItem")
         or soup.select("div.resultJobItem")
         or soup.select("a[href*='/jobsearch/jobposting/']")
     )
+    if cards and not _debug_card_printed:
+        # One-time real-markup dump so the next fix is exact, not another
+        # guess (same idea as the class doc's "print the raw result" rule).
+        print(f"  job_bank: DEBUG first card raw HTML:\n{str(cards[0])[:3000]}")
+        _debug_card_printed = True
     rows = []
     for card in cards:
         link = card if card.name == "a" else card.select_one("a[href*='/jobsearch/jobposting/']")
