@@ -51,10 +51,7 @@ def _parse(html: str) -> list[dict]:
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.select("span.organic-job") or soup.select("li.organic-job") or soup.select("div.result")
     if not cards and not _debug_page_printed:
-        # None of our guessed selectors matched anything -- dump real page
-        # structure instead of guessing again (same rule as job_bank.py).
-        body = soup.body
-        print(f"  eluta: DEBUG no cards matched, raw body (first 3000 chars):\n{str(body)[:3000] if body else html[:3000]}")
+        _debug_scan(soup)
         _debug_page_printed = True
     rows = []
     for card in cards:
@@ -82,3 +79,22 @@ def _parse(html: str) -> list[dict]:
     if cards and not rows:
         print("  eluta: found result cards but couldn't extract a link from any — selectors are stale")
     return rows
+
+
+def _debug_scan(soup: BeautifulSoup) -> None:
+    """The last debug dump (raw body, first 3000 chars) never reached the
+    results section -- it's a big page and got truncated in the search
+    form. Scanning for id/class mentioning "result" or "job" is a much
+    smaller, more targeted signal than dumping more raw HTML blind."""
+    matches = [
+        el
+        for el in soup.find_all(True)
+        if (el.get("id") and any(t in el.get("id", "").lower() for t in ("result", "job")))
+        or any(t in cls.lower() for cls in (el.get("class") or []) for t in ("result", "job"))
+    ]
+    print(f"  eluta: DEBUG no cards matched. Total tags on page: {len(soup.find_all(True))}")
+    print(f"  eluta: DEBUG {len(matches)} tag(s) with 'result'/'job' in id or class (first 40):")
+    for el in matches[:40]:
+        print(f"    <{el.name} id={el.get('id')!r} class={el.get('class')!r}>")
+    if not matches:
+        print(f"  eluta: DEBUG no matches -- raw body (first 4000 chars):\n{str(soup.body)[:4000]}")
