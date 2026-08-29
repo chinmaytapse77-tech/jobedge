@@ -24,6 +24,7 @@ MAX_PAGES = 3
 _debug_no_cards_printed = False
 _debug_card_printed = False
 _debug_date_printed = False
+_debug_detail_printed = False
 
 
 @register
@@ -111,6 +112,23 @@ def _resolve_url(link) -> str:
         return f"https://www.eluta.ca/{data_url.lstrip('/')}"
     href = link.get("href", "")
     return href if href.startswith("http") else f"https://www.eluta.ca{href}"
+
+
+def fetch_description(url: str) -> tuple[str | None, str | None]:
+    """Search cards carry no date (confirmed via production debug output) --
+    this detail page is the only place an Eluta listing can pick one up."""
+    global _debug_detail_printed
+    html = get_html(url)
+    soup = BeautifulSoup(html, "html.parser")
+    main = soup.select_one("main") or soup.body
+    if main is None:
+        return None, None
+    text = main.get_text(" ", strip=True)
+    posted_at = parse_posted_at(text)
+    if not _debug_detail_printed:
+        print(f"  eluta: DEBUG detail page main content (first 1500 chars):\n{text[:1500]}")
+        _debug_detail_printed = True
+    return text[:4000] or None, posted_at
 
 
 def _debug_scan(soup: BeautifulSoup, params: dict | None) -> None:

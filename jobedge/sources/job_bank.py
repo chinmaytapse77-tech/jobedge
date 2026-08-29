@@ -99,22 +99,25 @@ def _parse(html: str) -> list[dict]:
     return rows
 
 
-def fetch_description(url: str) -> str | None:
-    """Fetch one job posting's own page and pull its main content text.
-    Job Bank runs the Government of Canada WET template (confirmed by the
-    wb-inv visually-hidden-text convention seen in list-page markup), whose
-    main content lives in <main>; falls back to <body> if that's missing."""
+def fetch_description(url: str) -> tuple[str | None, str | None]:
+    """Fetch one job posting's own page and pull its main content text plus
+    a best-effort posted_at (a backstop for rows whose search-card date
+    couldn't be parsed -- see storage.update_listing_description). Job Bank
+    runs the Government of Canada WET template (confirmed by the wb-inv
+    visually-hidden-text convention seen in list-page markup), whose main
+    content lives in <main>; falls back to <body> if that's missing."""
     global _debug_detail_printed
     html = get_html(url)
     soup = BeautifulSoup(html, "html.parser")
     main = soup.select_one("main") or soup.body
     if main is None:
-        return None
+        return None, None
     text = main.get_text(" ", strip=True)
+    posted_at = parse_posted_at(text)
     if not _debug_detail_printed:
         print(f"  job_bank: DEBUG detail page main content (first 1500 chars):\n{text[:1500]}")
         _debug_detail_printed = True
-    return text[:MAX_DESCRIPTION_CHARS] or None
+    return text[:MAX_DESCRIPTION_CHARS] or None, posted_at
 
 
 def strip_label(text: str | None, label: str) -> str | None:

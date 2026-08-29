@@ -27,6 +27,16 @@ def get_enrichment_candidates(path: str, min_score: int, limit: int) -> list[dic
         return [dict(row) for row in cursor.fetchall()]
 
 
-def update_listing_description(path: str, listing_id: str, description: str) -> None:
+def update_listing_description(
+    path: str, listing_id: str, description: str, posted_at: str | None = None
+) -> None:
+    """posted_at, when given, only fills a currently-NULL value -- a search
+    card's own date (already stored) is never overwritten by a detail-page
+    guess."""
     with connect(path) as conn:
         conn.execute("UPDATE listings SET description = ? WHERE id = ?", (description, listing_id))
+        if posted_at:
+            conn.execute(
+                "UPDATE listings SET posted_at = ? WHERE id = ? AND posted_at IS NULL",
+                (posted_at, listing_id),
+            )

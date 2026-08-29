@@ -12,7 +12,12 @@ from jobedge.storage._schema import connect, reason_column, score_column
 
 
 def upsert_listings(path: str, rows: Sequence[dict]) -> int:
-    """Insert new listings, ignoring duplicates by id. Returns count of NEW rows."""
+    """Insert new listings, ignoring duplicates by id. Returns count of NEW rows.
+
+    A duplicate whose stored posted_at is still NULL gets backfilled from
+    this fetch's parsed value -- otherwise a listing seen before the posted-
+    date extraction existed (or before a source's date selector worked)
+    could never pick one up, since it will never look "new" again."""
     new_count = 0
     with connect(path) as conn:
         for row in rows:
@@ -29,6 +34,11 @@ def upsert_listings(path: str, rows: Sequence[dict]) -> int:
             )
             if cursor.rowcount:
                 new_count += 1
+            elif row.get("posted_at"):
+                conn.execute(
+                    "UPDATE listings SET posted_at = :posted_at WHERE id = :id AND posted_at IS NULL",
+                    row,
+                )
     return new_count
 
 
