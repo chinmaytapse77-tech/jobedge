@@ -11,16 +11,22 @@ from jobedge.storage._schema import connect
 
 
 def backfill_experience_ok(
-    path: str, max_years: int, is_within_range: Callable[[str | None, str | None, int], bool]
+    path: str,
+    max_years: int,
+    is_within_range: Callable[[str | None, str | None, int], bool],
+    force: bool = False,
 ) -> int:
     """Computes experience_ok for every listing missing it -- almost all
     already-scored rows, since the Scorer only ever looks at unscored ones
-    and this column didn't exist when they were first scored. Returns rows
-    updated."""
+    and this column didn't exist when they were first scored. force=True
+    recomputes every row instead (needed once whenever max_years itself
+    changes, since an already-classified row won't look missing). Returns
+    rows updated."""
     with connect(path) as conn:
-        rows = conn.execute(
-            "SELECT id, title, description FROM listings WHERE experience_ok IS NULL"
-        ).fetchall()
+        query = "SELECT id, title, description FROM listings"
+        if not force:
+            query += " WHERE experience_ok IS NULL"
+        rows = conn.execute(query).fetchall()
         for row in rows:
             experience_ok = int(is_within_range(row["title"], row["description"], max_years))
             conn.execute(

@@ -12,7 +12,7 @@ max_listing_age_hours: 48
 # (an explicit "senior"/"director" signal, or a stated years-required
 # figure above this number). A listing with no experience signal at all
 # is always kept -- most postings never state one.
-max_years_experience: 2
+max_years_experience: 3
 
 # false = use real Sources (job_bank, eluta today); true = mock fetchers,
 # for developing offline without hitting the network.
