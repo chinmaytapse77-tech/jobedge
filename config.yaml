@@ -4,6 +4,10 @@ db_path: "jobedge.db"
 min_fit_score: 30
 request_delay_seconds: 2.0
 
+# Dashboard hides listings older than this unless nothing recent matches
+# (steering: fail loudly rather than silently show a confusing empty feed).
+max_listing_age_hours: 48
+
 # false = use real Sources (job_bank, eluta today); true = mock fetchers,
 # for developing offline without hitting the network.
 use_mock_fetcher: false

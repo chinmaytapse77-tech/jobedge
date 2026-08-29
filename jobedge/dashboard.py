@@ -44,9 +44,25 @@ def _render_track(config, profile_name: str) -> None:
         st.info("No skill gaps found yet -- run more cycles, or nothing's missing for this pool.")
 
     st.subheader("Opportunity feed")
-    listings = storage.get_listings(config.db_path, profile_name, limit=100, min_score=config.min_fit_score)
+    st.caption(f"Showing matches posted within the last {config.max_listing_age_hours} hours.")
+    listings = storage.get_listings(
+        config.db_path,
+        profile_name,
+        limit=100,
+        min_score=config.min_fit_score,
+        max_age_hours=config.max_listing_age_hours,
+    )
     if not listings:
-        st.info(f"No listings scoring at or above {config.min_fit_score} yet.")
+        older_count = len(
+            storage.get_listings(config.db_path, profile_name, limit=100, min_score=config.min_fit_score)
+        )
+        if older_count:
+            st.info(
+                f"No listings posted within the last {config.max_listing_age_hours} hours yet, "
+                f"though {older_count} older or undated match(es) exist."
+            )
+        else:
+            st.info(f"No listings scoring at or above {config.min_fit_score} yet.")
         return
 
     st.dataframe(

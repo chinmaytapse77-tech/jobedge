@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup
 
 from jobedge.config import Config
 from jobedge.sources.base import Source, normalize_row, register
+from jobedge.sources.dateparse import parse_posted_at
 from jobedge.sources.http import get_html
 from jobedge.sources.util import search_all_locations
 
@@ -27,6 +28,7 @@ MAX_PAGES = 3
 MAX_DESCRIPTION_CHARS = 4000
 
 _debug_detail_printed = False
+_debug_date_printed = False
 
 
 @register
@@ -54,6 +56,7 @@ def _search(keywords: str | None, city: str) -> list[dict]:
 
 
 def _parse(html: str) -> list[dict]:
+    global _debug_date_printed
     soup = BeautifulSoup(html, "html.parser")
     cards = (
         soup.select("article.resultJobItem")
@@ -71,6 +74,13 @@ def _parse(html: str) -> list[dict]:
         title_el = card.select_one(".noctitle") or card.select_one("h3, h4") or link
         company_el = card.select_one(".business")
         location_el = card.select_one(".location")
+        date_el = card.select_one(".date, [class*='date']")
+        posted_at = parse_posted_at(date_el.get_text(" ", strip=True) if date_el else None)
+        if posted_at is None:
+            posted_at = parse_posted_at(card.get_text(" ", strip=True))
+        if posted_at is None and not _debug_date_printed:
+            print(f"  job_bank: DEBUG couldn't find a posting date in card text:\n{card.get_text(' ', strip=True)[:500]}")
+            _debug_date_printed = True
         rows.append(
             normalize_row(
                 source="job_bank",
@@ -80,7 +90,7 @@ def _parse(html: str) -> list[dict]:
                 location=strip_label(location_el.get_text(strip=True) if location_el else None, "Location"),
                 url=url,
                 description=None,
-                posted_at=None,
+                posted_at=posted_at,
                 raw=str(card)[:2000],
             )
         )
