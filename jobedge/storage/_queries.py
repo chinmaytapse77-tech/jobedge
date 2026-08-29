@@ -68,9 +68,23 @@ def log_cycle(
         )
 
 
-def get_listings(path: str, profile: str, limit: int = 50, min_score: int = 0) -> list[dict]:
+def get_listings(
+    path: str,
+    profile: str,
+    limit: int = 50,
+    min_score: int = 0,
+    max_age_hours: int | None = None,
+) -> list[dict]:
+    """max_age_hours, when set, requires a KNOWN posted_at within that window --
+    a listing with no confirmed posting date is excluded rather than assumed
+    fresh (steering: never silently treat unverified data as safe)."""
     score_col = score_column(profile)
     reason_col = reason_column(profile)
+    age_clause = ""
+    params: tuple = (min_score,)
+    if max_age_hours is not None:
+        age_clause = "AND posted_at IS NOT NULL AND datetime(posted_at) >= datetime('now', ?)"
+        params = (min_score, f"-{max_age_hours} hours")
     with connect(path) as conn:
         cursor = conn.execute(
             f"""
@@ -78,10 +92,11 @@ def get_listings(path: str, profile: str, limit: int = 50, min_score: int = 0) -
                    {score_col} AS fit_score, {reason_col} AS fit_reason, best_track
             FROM listings
             WHERE {score_col} >= ?
+            {age_clause}
             ORDER BY {score_col} DESC
             LIMIT ?
             """,
-            (min_score, limit),
+            (*params, limit),
         )
         return [dict(row) for row in cursor.fetchall()]
 

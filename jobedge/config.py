@@ -12,6 +12,7 @@ DEFAULT_MIN_FIT_SCORE = 50
 DEFAULT_REQUEST_DELAY_SECONDS = 2.0
 DEFAULT_DB_PATH = "jobedge.db"
 DEFAULT_SOURCES = ["job_bank", "company_pages", "eluta"]
+DEFAULT_MAX_LISTING_AGE_HOURS = 48
 
 REQUIRED_PROFILE_FIELDS = (
     "name",
@@ -48,6 +49,7 @@ class Config:
     sources: list[str] = field(default_factory=lambda: list(DEFAULT_SOURCES))
     request_delay_seconds: float = DEFAULT_REQUEST_DELAY_SECONDS
     use_mock_fetcher: bool = True
+    max_listing_age_hours: int = DEFAULT_MAX_LISTING_AGE_HOURS
 
 
 def _build_profile(raw: dict, index: int) -> Profile:
@@ -114,4 +116,7 @@ def load_config(path: str | Path = "config.yaml") -> Config:
             raw.get("request_delay_seconds", DEFAULT_REQUEST_DELAY_SECONDS)
         ),
         use_mock_fetcher=bool(raw.get("use_mock_fetcher", True)),
+        max_listing_age_hours=int(
+            raw.get("max_listing_age_hours", DEFAULT_MAX_LISTING_AGE_HOURS)
+        ),
     )

@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 
 from jobedge.config import Config
 from jobedge.sources.base import Source, normalize_row, register
+from jobedge.sources.dateparse import parse_posted_at
 from jobedge.sources.http import get_html
 from jobedge.sources.util import search_all_locations
 
@@ -22,6 +23,7 @@ MAX_PAGES = 3
 
 _debug_no_cards_printed = False
 _debug_card_printed = False
+_debug_date_printed = False
 
 
 @register
@@ -49,7 +51,7 @@ def _search(keywords: str | None, city: str) -> list[dict]:
 
 
 def _parse(html: str, params: dict | None = None) -> list[dict]:
-    global _debug_no_cards_printed, _debug_card_printed
+    global _debug_no_cards_printed, _debug_card_printed, _debug_date_printed
     soup = BeautifulSoup(html, "html.parser")
     cards = (
         soup.select("div.organic-job")
@@ -73,6 +75,15 @@ def _parse(html: str, params: dict | None = None) -> list[dict]:
         if (not company_el or not location_el) and not _debug_card_printed:
             print(f"  eluta: DEBUG full card HTML (company/location selectors unverified):\n{str(card)[:2000]}")
             _debug_card_printed = True
+
+        date_el = card.select_one(".date, .lastseen, .posted, [class*='date']")
+        posted_at = parse_posted_at(date_el.get_text(" ", strip=True) if date_el else None)
+        if posted_at is None:
+            posted_at = parse_posted_at(card.get_text(" ", strip=True))
+        if posted_at is None and not _debug_date_printed:
+            print(f"  eluta: DEBUG couldn't find a posting date in card text:\n{card.get_text(' ', strip=True)[:500]}")
+            _debug_date_printed = True
+
         rows.append(
             normalize_row(
                 source="eluta",
@@ -82,7 +93,7 @@ def _parse(html: str, params: dict | None = None) -> list[dict]:
                 location=location_el.get_text(strip=True) if location_el else None,
                 url=url,
                 description=None,
-                posted_at=None,
+                posted_at=posted_at,
                 raw=str(card)[:2000],
             )
         )
