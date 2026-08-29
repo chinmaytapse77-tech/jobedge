@@ -6,7 +6,12 @@ on:
     # respects source rate limits (request_delay_seconds in config.yaml)
     # regardless of how often it runs.
     - cron: "0 13 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force_experience_backfill:
+        description: "Recompute experience_ok for every listing, not just unclassified ones (needed once after max_years_experience changes)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -33,6 +38,8 @@ jobs:
         run: python -m jobedge.backfill_titles
 
       - name: Backfill experience-level classification
+        env:
+          FORCE_EXPERIENCE_BACKFILL: ${{ github.event.inputs.force_experience_backfill }}
         run: python -m jobedge.backfill_experience
 
       - name: Commit updated database
