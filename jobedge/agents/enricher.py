@@ -14,14 +14,14 @@ import time
 from jobedge.agents.base import Agent, AgentResult
 from jobedge.config import Config, find_profile
 from jobedge.scoring import pick_track, score_listing
-from jobedge.sources.job_bank import fetch_description
+from jobedge.sources.eluta import fetch_description as fetch_eluta_description
+from jobedge.sources.job_bank import fetch_description as fetch_job_bank_description
 from jobedge.storage import get_enrichment_candidates, update_listing_description, update_listing_score
 
 MIN_SCORE_TO_ENRICH = 30
 MAX_CANDIDATES = 30
 
-# Only job_bank has a working description fetcher today.
-_FETCHERS = {"job_bank": fetch_description}
+_FETCHERS = {"job_bank": fetch_job_bank_description, "eluta": fetch_eluta_description}
 
 
 class Enricher(Agent):
@@ -45,14 +45,14 @@ class Enricher(Agent):
 
             time.sleep(config.request_delay_seconds)
             try:
-                description = fetcher(listing["url"])
+                description, posted_at = fetcher(listing["url"])
             except Exception as exc:  # one bad detail page must not kill enrichment
                 print(f"  enricher: failed to fetch description for {listing['url']}: {exc}")
                 continue
             if not description:
                 continue
 
-            update_listing_description(db_path, listing["id"], description)
+            update_listing_description(db_path, listing["id"], description, posted_at)
             sales_score, sales_reason = score_listing(
                 sales_profile, listing["title"], description, listing["location"]
             )
