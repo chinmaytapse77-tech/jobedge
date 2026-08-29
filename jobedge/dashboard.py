@@ -44,7 +44,10 @@ def _render_track(config, profile_name: str) -> None:
         st.info("No skill gaps found yet -- run more cycles, or nothing's missing for this pool.")
 
     st.subheader("Opportunity feed")
-    st.caption(f"Showing matches posted within the last {config.max_listing_age_hours} hours.")
+    st.caption(
+        f"Showing matches posted within the last {config.max_listing_age_hours} hours, "
+        f"asking for no more than about {config.max_years_experience} years of experience."
+    )
     listings = storage.get_listings(
         config.db_path,
         profile_name,

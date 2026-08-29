@@ -102,6 +102,7 @@ def get_listings(
                    {score_col} AS fit_score, {reason_col} AS fit_reason, best_track
             FROM listings
             WHERE {score_col} >= ?
+              AND (experience_ok IS NULL OR experience_ok = 1)
             {age_clause}
             ORDER BY {score_col} DESC
             LIMIT ?

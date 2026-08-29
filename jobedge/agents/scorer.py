@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from jobedge.agents.base import Agent, AgentResult
 from jobedge.config import Config, find_profile
+from jobedge.experience import is_within_experience_range
 from jobedge.scoring import pick_track, score_listing
 from jobedge.storage import get_unscored_listings, update_listing_score
 
@@ -32,8 +33,12 @@ class Scorer(Agent):
             )
             best_track = pick_track(sales_score, hr_score)
             track_counts[best_track] += 1
+            experience_ok = is_within_experience_range(
+                listing["title"], listing["description"], config.max_years_experience
+            )
             update_listing_score(
-                db_path, listing["id"], sales_score, sales_reason, hr_score, hr_reason, best_track
+                db_path, listing["id"], sales_score, sales_reason, hr_score, hr_reason,
+                best_track, experience_ok,
             )
 
         notes = (

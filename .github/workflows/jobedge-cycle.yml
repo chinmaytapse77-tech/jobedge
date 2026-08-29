@@ -32,6 +32,9 @@ jobs:
       - name: Backfill job_bank title/location cleanup
         run: python -m jobedge.backfill_titles
 
+      - name: Backfill experience-level classification
+        run: python -m jobedge.backfill_experience
+
       - name: Commit updated database
         run: |
           git config user.name "jobedge-bot"

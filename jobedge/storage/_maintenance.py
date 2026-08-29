@@ -10,6 +10,25 @@ from typing import Callable
 from jobedge.storage._schema import connect
 
 
+def backfill_experience_ok(
+    path: str, max_years: int, is_within_range: Callable[[str | None, str | None, int], bool]
+) -> int:
+    """Computes experience_ok for every listing missing it -- almost all
+    already-scored rows, since the Scorer only ever looks at unscored ones
+    and this column didn't exist when they were first scored. Returns rows
+    updated."""
+    with connect(path) as conn:
+        rows = conn.execute(
+            "SELECT id, title, description FROM listings WHERE experience_ok IS NULL"
+        ).fetchall()
+        for row in rows:
+            experience_ok = int(is_within_range(row["title"], row["description"], max_years))
+            conn.execute(
+                "UPDATE listings SET experience_ok = ? WHERE id = ?", (experience_ok, row["id"])
+            )
+        return len(rows)
+
+
 def backfill_job_bank_text(path: str, strip_label: Callable[[str | None, str], str | None]) -> int:
     """Re-applies strip_label to already-stored job_bank title/location
     values -- rows fetched before the selector fix landed still carry the

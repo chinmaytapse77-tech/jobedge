@@ -33,14 +33,24 @@ def update_listing_score(
     hr_score: int,
     hr_reason: str,
     best_track: str | None,
+    experience_ok: bool | None = None,
 ) -> None:
     with connect(path) as conn:
         conn.execute(
             """
             UPDATE listings
             SET sales_fit_score = ?, sales_fit_reason = ?,
-                hr_fit_score = ?, hr_fit_reason = ?, best_track = ?
+                hr_fit_score = ?, hr_fit_reason = ?, best_track = ?,
+                experience_ok = ?
             WHERE id = ?
             """,
-            (sales_score, sales_reason, hr_score, hr_reason, best_track, listing_id),
+            (
+                sales_score,
+                sales_reason,
+                hr_score,
+                hr_reason,
+                best_track,
+                None if experience_ok is None else int(experience_ok),
+                listing_id,
+            ),
         )
