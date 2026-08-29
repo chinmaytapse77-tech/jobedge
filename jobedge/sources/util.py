@@ -1,9 +1,14 @@
 """Shared adaptive-search pattern for HTML-scraping Sources.
 
-Searches every configured location with each profile's primary title
-separately; if that returns too few results, relaxes to a location-only
-search and logs that it did, rather than silently returning a near-empty
-database (steering: prefer nearby/broader roles over an empty result set).
+Searches every configured location with EVERY profile target title
+separately (not just the primary one) -- a listing titled "Sales
+Representative" or "Recruiter" is a real, distinct search on Job Bank/
+Eluta from "B2B Sales Executive"; searching only the first title missed
+whole categories of relevant roles even though the Scorer would have
+matched them fine once found. If a location still comes up short,
+relaxes to a location-only search and logs that it did, rather than
+silently returning a near-empty database (steering: prefer nearby/
+broader roles over an empty result set).
 """
 
 from __future__ import annotations
@@ -55,16 +60,16 @@ def search_all_locations(config: Config, source_name: str, search: SearchFn) -> 
 
 
 def _keyword_variants(config: Config) -> list[str]:
-    """One search phrase per profile's primary target title, rather than
-    concatenating every profile's titles into one literal compound phrase
-    that matches nothing -- confirmed via eluta.ca's own "no results for
-    <the entire concatenated string>" message, with job_bank showing the
-    identical always-relax symptom."""
+    """One search phrase per profile target title, searched separately --
+    never concatenated into one literal compound phrase, which matches
+    nothing (confirmed via eluta.ca's own "no results for <the entire
+    concatenated string>" message, with job_bank showing the identical
+    always-relax symptom)."""
     variants: list[str] = []
     seen: set[str] = set()
     for profile in config.profiles:
-        title = profile.target_titles[0]
-        if title not in seen:
-            seen.add(title)
-            variants.append(title)
+        for title in profile.target_titles:
+            if title not in seen:
+                seen.add(title)
+                variants.append(title)
     return variants
