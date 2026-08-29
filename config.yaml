@@ -8,6 +8,12 @@ request_delay_seconds: 2.0
 # (steering: fail loudly rather than silently show a confusing empty feed).
 max_listing_age_hours: 48
 
+# Dashboard hides listings that clearly ask for more experience than this
+# (an explicit "senior"/"director" signal, or a stated years-required
+# figure above this number). A listing with no experience signal at all
+# is always kept -- most postings never state one.
+max_years_experience: 2
+
 # false = use real Sources (job_bank, eluta today); true = mock fetchers,
 # for developing offline without hitting the network.
 use_mock_fetcher: false

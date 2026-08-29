@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS listings (
     sales_fit_reason TEXT,
     hr_fit_score INTEGER,
     hr_fit_reason TEXT,
-    best_track TEXT
+    best_track TEXT,
+    experience_ok INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS skill_gaps (
@@ -75,6 +76,16 @@ def connect(path: str) -> Iterator[sqlite3.Connection]:
 def init_db(path: str) -> None:
     with connect(path) as conn:
         conn.executescript(SCHEMA)
+        _migrate_columns(conn)
+
+
+def _migrate_columns(conn: sqlite3.Connection) -> None:
+    """CREATE TABLE IF NOT EXISTS never adds columns to an already-existing
+    table -- a column added to SCHEMA after the production db was created
+    needs an explicit ALTER TABLE, guarded so it only runs once."""
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(listings)")}
+    if "experience_ok" not in existing:
+        conn.execute("ALTER TABLE listings ADD COLUMN experience_ok INTEGER")
 
 
 def score_column(profile: str) -> str:

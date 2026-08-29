@@ -13,6 +13,7 @@ import time
 
 from jobedge.agents.base import Agent, AgentResult
 from jobedge.config import Config, find_profile
+from jobedge.experience import is_within_experience_range
 from jobedge.scoring import pick_track, score_listing
 from jobedge.sources.eluta import fetch_description as fetch_eluta_description
 from jobedge.sources.job_bank import fetch_description as fetch_job_bank_description
@@ -58,8 +59,10 @@ class Enricher(Agent):
             )
             hr_score, hr_reason = score_listing(hr_profile, listing["title"], description, listing["location"])
             best_track = pick_track(sales_score, hr_score)
+            experience_ok = is_within_experience_range(listing["title"], description, config.max_years_experience)
             update_listing_score(
-                db_path, listing["id"], sales_score, sales_reason, hr_score, hr_reason, best_track
+                db_path, listing["id"], sales_score, sales_reason, hr_score, hr_reason,
+                best_track, experience_ok,
             )
             enriched += 1
 
