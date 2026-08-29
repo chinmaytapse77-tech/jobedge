@@ -10,6 +10,7 @@ from jobedge.config import load_config
 from jobedge import storage
 
 TRACK_LABELS = {"sales": "Sales", "hr": "HR / Admin"}
+SOURCE_LABELS = {"job_bank": "Job Bank", "eluta": "Eluta"}
 
 
 @st.cache_resource
@@ -72,6 +73,7 @@ def _render_track(config, profile_name: str) -> None:
         [
             {
                 "Fit score": row["fit_score"],
+                "Source": SOURCE_LABELS.get(row["source"], row["source"]),
                 "Role": row["title"],
                 "Company": row["company"],
                 "Location": row["location"],

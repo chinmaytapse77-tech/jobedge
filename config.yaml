@@ -43,9 +43,11 @@ profiles:
   - name: "sales"
     target_titles:
       - "B2B Sales Executive"
+      - "Sales Executive"
       - "Account Executive"
       - "Sales Associate"
       - "Business Development Representative"
+      - "Business Development"
       - "Inside Sales Representative"
       - "Territory Sales Manager"
       - "Sales Representative"
@@ -107,6 +109,11 @@ profiles:
       - "HR Administrative Assistant"
       - "HR Assistant"
       - "Recruitment Coordinator"
+      - "Recruiter"
+      - "Talent Acquisition Coordinator"
+      - "Talent Acquisition Specialist"
+      - "Payroll Coordinator"
+      - "Payroll Administrator"
       - "Onboarding Coordinator"
       - "Global Mobility Analyst"
     keywords:
