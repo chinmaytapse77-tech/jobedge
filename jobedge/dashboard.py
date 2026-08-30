@@ -18,12 +18,25 @@ def _config():
     return load_config()
 
 
+def _last_scan_time(config) -> str | None:
+    """Most recent successful fetch across all configured sources, or None
+    if nothing has ever run yet."""
+    times = [t for t in (storage.last_fetch_time(config.db_path, s) for s in config.sources) if t]
+    return max(times) if times else None
+
+
 def main() -> None:
     st.set_page_config(page_title="JobEdge", layout="wide")
     st.title("JobEdge")
     st.caption("Live-scored listings and skill-gap report, per track. Read-only.")
 
     config = _config()
+    last_scan = _last_scan_time(config)
+    if last_scan:
+        st.caption(
+            f"Data last scanned: {last_scan}. Run `./refresh_and_view.sh` for a fresh scan "
+            "(takes several minutes -- it checks every job title across every location)."
+        )
     tabs = st.tabs([TRACK_LABELS[p.name] for p in config.profiles])
 
     for tab, profile in zip(tabs, config.profiles):
