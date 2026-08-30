@@ -17,9 +17,9 @@ from jobedge.agents.scorer import Scorer
 from jobedge.agents.verifier import Verifier
 from jobedge.config import Config
 from jobedge.sources import base as sources_base
-from jobedge.sources import eluta, job_bank  # noqa: F401 - import registers them
+from jobedge.sources import eluta, indeed, job_bank, linkedin  # noqa: F401 - import registers them
 
-MOCKED_SOURCES = ("company_pages", "eluta", "indeed", "linkedin")
+MOCKED_SOURCES = ("company_pages",)
 
 
 def _build_registry(config: Config) -> dict[str, callable]:
